@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>Google Phone Gallery</title>
 	<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" />
     <link rel="stylesheet" href="assets/css/app.css" />
 	<link rel="stylesheet" href="assets/css/app.animations.css" />
 	<style>
@@ -55,7 +56,7 @@
 			  });*/
 			  
 			  self.phones = Phone.getAll({}, function(phones) {
-				  self.setImage(phone.images[0].img);
+				  self.phones = phones
 				}); 
 			}
 		})
@@ -95,8 +96,37 @@
 				self.metaFields={
 							   "id":{"name":"Id", "type":"text", "required":true,"showInForm":false,"showInDetails":false,"category":"Identity"},
 							   "images":{"name":"images", "type":"array", "required":false,"showInForm":false,"showInDetails":false,"category":"Identity"},
-							   
-							   "identifier":{"name":"Identifier", "type":"text", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							  
+                                "color":{"name":"Color Phone", "type":"radio", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							    "price_rank":{"name":"Price Rank", "type":"select",
+                                                                    "values":[
+                                                                              {"id":0,"description":"<=100$"},
+                                                                              {"id":1,"description":">100$ -<=200"},
+                                                                              {"id":2,"description":">200$ -<=300"},
+                                                                              {"id":3,"description":">300$ -<=400"},
+                                                                              {"id":4,"description":">400$"},
+                                                                             ],
+                                                                    "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+                                "price_rank":{"name":"Price Rank", "type":"select",
+                                                                    "values":[
+                                                                              {"id":0,"description":"<=100$"},
+                                                                              {"id":1,"description":">100$ -<=200"},
+                                                                              {"id":2,"description":">200$ -<=300"},
+                                                                              {"id":3,"description":">300$ -<=400"},
+                                                                              {"id":4,"description":">400$"},
+                                                                             ],
+                                                                    "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+                                "price_rank2":{"name":"Price Rank2", "type":"select",
+                                                                    "values":[
+                                                                              {"id":"0","description":"<=100$"},
+                                                                              {"id":"1","description":">100$ -<=200"},
+                                                                              {"id":"2","description":">200$ -<=300"},
+                                                                              {"id":"3","description":">300$ -<=400"},
+                                                                              {"id":"4","description":">400$"},
+                                                                             ],
+                                                                    "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							  
+                                "identifier":{"name":"Identifier", "type":"text", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
 							   "name":{"name":"Name", "type":"text", "required":true,"showInForm":true,"showInDetails":false,"category":"Identity"},
 							   "description":{"name":"Descripcion", "type":"textarea", "required":false,"showInDetails":false,"showInForm":true,"category":"Identity"},
 							   "date":{"name":"Date", "type":"date", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
@@ -135,7 +165,7 @@
 							   "hardware_usb":{"name":"Hardware USB", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
 							   
 							   "camera_features":{"name":"Camera Feactures", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Camera"},
-							   "camera_features_primary":{"name":"Camera Feactures Primary", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Camera"},
+							   "camera_features_primary":{"name":"Camera Feactures Primary", "type":"text", "required":false, "showInForm":true, "showInDetails":true, "category":"Camera"},
 							   
 							   "additionalfeatures":{"name":"Adicional Feactures", "type":"textarea", "required":false,"showInForm":true,"showInDetails":true,"category":"Additional Features"}
 							   
@@ -149,7 +179,40 @@
 				return function(obj){
 					return _.sortKeysBy(obj);
 				}
-		});
+		}).directive('dateInput', function(){
+            return {
+                restrict : 'A',
+                scope : {
+                    ngModel : '='
+                },
+                link: function (scope) {
+                    if (scope.ngModel) scope.ngModel = new Date(scope.ngModel);
+                }
+            }
+        }).directive('checkInput', function(){
+            return {
+                restrict : 'A',
+                scope : {
+                    ngModel : '='
+                },
+                link: function (scope) {
+                    if (scope.ngModel) scope.ngModel = (scope.ngModel=='true')?true:false;
+                }
+            }
+        })
+        .directive('convertToNumber', function() {
+              return {
+                require: 'ngModel',
+                link: function(scope, element, attrs, ngModel) {
+                  ngModel.$parsers.push(function(val) {
+                    return val != null ? '' + val : null;
+                  });
+                  ngModel.$formatters.push(function(val) {
+                    return val != null ? parseInt(val, 10) : null;
+                  });
+                }
+              }
+            });
 		
 		//-------------------------------------------------------//
 		// Define the `phoneDetail` module
@@ -265,6 +328,7 @@
 			<ul class="nav navbar-nav">
 				<li class="active"><a href="">PhoneCat</a></li>
 				<li class="active"><a href="#!/phones">Phones</a></li>
+				<li class="active"><a href="#!/phonesform/2">Editar phone 2</a></li>
 			</ul>
 		</div>
 			
@@ -324,6 +388,7 @@
 				  </a>
 				  <a href="#!/phones/{{phone.id}}">{{phone.name}}</a>
 				  <p>{{phone.id}}-{{phone.description | limitTo:150}} ...</p>
+				  <a class="btn btn-info btn-sm" href="#!/phonesform/{{phone.id}}"> <i class="fa fa-edit"></i></a>
 				</li>
 			  </ul>
 
@@ -341,11 +406,43 @@
 			<div ng-repeat="(key,value) in $ctrl.phone ">
                 <ng-form name="formChild">
 					<div class="form-group" ng-if="$ctrl.metaFields[key].showInForm">
-						<label for="item">{{$ctrl.metaFields[key].name}}</label>
+						<label ng-if="$ctrl.metaFields[key].type!='checkbox' && $ctrl.metaFields[key].type!='radio'" for="item">{{$ctrl.metaFields[key].name}}</label>
 						
-						<input ng-if="$ctrl.metaFields[key].type!='textarea'" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" >
+						<input ng-if="$ctrl.metaFields[key].type=='text'" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" >
 						
 						<textarea ng-if="$ctrl.metaFields[key].type=='textarea'" cols="150" rows="3" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" ></textarea>
+						
+						
+						<input date-input  ng-if="$ctrl.metaFields[key].type=='date'"  type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" >
+						
+						
+						
+						<input ng-if="$ctrl.metaFields[key].type=='email'" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" >
+						
+						<div ng-if="$ctrl.metaFields[key].type=='checkbox'" class="checkbox">
+                                  <label><input check-input type="checkbox" value="" ng-model="$ctrl.phone[key]">{{$ctrl.metaFields[key].name}}</label>
+                        </div>
+                        
+                       
+                        <div  ng-if="$ctrl.metaFields[key].type=='radio'"  class="radio">
+                            <label>
+                                <input type="radio" name="phonecolor" value="blanco"  ng-model="$ctrl.phone[key]">
+                                Blanco
+                            </label>
+                        </div>
+                        <div  ng-if="$ctrl.metaFields[key].type=='radio'"  class="radio">
+                            <label>
+                                <input type="radio" name="phonecolor" value="color"  ng-model="$ctrl.phone[key]">
+                                Negro
+                            </label>
+                        </div>
+                        
+                        <select  ng-if="$ctrl.metaFields[key].type=='select' && key=='price_rank'" ng-model="$ctrl.phone[key]" ng-options="item.id as item.description for item in $ctrl.metaFields[key].values">   
+                        </select>
+                        	
+						<select  ng-if="$ctrl.metaFields[key].type=='select'  && key=='price_rank2'" ng-model="$ctrl.phone[key]" ng-options="item.id as item.description for item in $ctrl.metaFields[key].values" >   
+                        </select>
+						
 						
 						<div class="help-block" style="color:red" ng-messages="formChild.item.$error">
 							<div ng-messages-include="messages.html"></div>
@@ -485,3 +582,4 @@
 
   </body>
 </html>
+
