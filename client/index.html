@@ -6,6 +6,9 @@
 	<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="assets/css/app.css" />
 	<link rel="stylesheet" href="assets/css/app.animations.css" />
+	<style>
+		
+	</style>
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/angular/angular.js"></script>
 	<script src="bower_components/angular-animate/angular-animate.js"></script>
@@ -17,15 +20,468 @@
 		//---------------------------------------------------------//
 		// Define the 'phonecatApp' module
 	    //---------------------------------------------------------//
-		angular.module('phonecatApp', [])
-		.controller('controller1',function($scope){
-			$scope.nombre="controller1";
+		angular.module('phonecatApp', ['ngAnimate','ngRoute','core.filters.checkmark','core.factories.phone','phoneDetail','phoneList','animations','phoneForm','ngMessages'])
+		.config(['$locationProvider' ,'$routeProvider',
+			function config($locationProvider, $routeProvider) {
+			  $locationProvider.hashPrefix('!');
+
+			  $routeProvider.
+				when('/phones', {
+				  template: '<phone-list></phone-list>'
+				}).
+				when('/phones/:phoneId', {
+				  template: '<phone-detail></phone-detail>'
+				}).
+				when('/phonesform/:phoneId', {
+				  template: '<phone-form></phone-form>'
+				}).
+				otherwise('/phones');
+			}
+		  ])
+		  
+
+		//---------------------------------------------------------//
+		// Define the `phoneList` module
+		//---------------------------------------------------------//
+		angular.module('phoneList', ['core.factories.phone'])
+		.component('phoneList', {
+			templateUrl: 'phone-list.template.html',
+			controller: function PhoneListController(Phone, $http) {
+			  var self = this;
+			  self.orderProp = 'age';
+
+			 /** $http.get('api/phones').then(function(response) {
+				self.phones = response.data;
+			  });*/
+			  
+			  self.phones = Phone.getAll({}, function(phones) {
+				  self.setImage(phone.images[0].img);
+				}); 
+			}
+		})
+		  
+		//-------------------------------------------------------//
+		// Define the `phoneForm` module
+		//-------------------------------------------------------//
+		angular.module('phoneForm', ['core.factories.phone'])
+		.component('phoneForm', {
+			templateUrl: 'phone-form.template.html',
+			controller:  function PhoneFormController(Phone, $routeParams) {
+				var self = this;
+
+				self.setImage = function setImage(imageUrl) {
+				  self.mainImageUrl = imageUrl;
+				};
+
+				self.phone = Phone.get({'id': $routeParams.phoneId}, function(phone) {
+				  self.setImage(phone.images[0].img);
+				}); 
+				
+				self.update=function(){
+					Phone.update(self.phone,function (result) {     
+						if(result.success){
+							  alert('OK','UPDATE PHONE','La modificación se ha realizado correctamente');
+						}else{
+							alert('error','UPDATE PHONE','No ha sido posible realizar las modificaciones');
+						}
+						
+					},function(err){
+						alert('error','UPDATE PHONE',angular.toJson(err));
+					});
+				
+				}
+				
+				
+				self.metaFields={
+							   "id":{"name":"Id", "type":"text", "required":true,"showInForm":false,"showInDetails":false,"category":"Identity"},
+							   "images":{"name":"images", "type":"array", "required":false,"showInForm":false,"showInDetails":false,"category":"Identity"},
+							   
+							   "identifier":{"name":"Identifier", "type":"text", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							   "name":{"name":"Name", "type":"text", "required":true,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							   "description":{"name":"Descripcion", "type":"textarea", "required":false,"showInDetails":false,"showInForm":true,"category":"Identity"},
+							   "date":{"name":"Date", "type":"date", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							   "email":{"name":"Email", "type":"email", "required":false,"showInForm":true,"showInDetails":false,"category":"Identity"},
+							   
+							   "availability":{"name":"Avalaibility", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Availability and Networks"},
+							   
+							   "battery_standbytime":{"name":"Battery Standby Time", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Battery"},
+							   "battery_talktime":{"name":"Battery Talk Time", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Battery"},
+							   "battery_type":{"name":"Battery Type", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Battery"},
+							   
+							   "storage_flash":{"name":"Storage Flash", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Storage and Memory"},
+							   "storage_ram":{"name":"Storage Ram", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Storage and Memory"},
+							   
+							   "connectivity_bluetooth":{"name":"Connecitivity Bluetooth", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Connectivity"},
+							   "connectivity_cell":{"name":"Connectivity Cell", "type":"textarea", "required":false,"showInForm":true,"showInDetails":true,"category":"Connectivity"},
+							   "connectivity_gps":{"name":"Connectivity GPS", "type":"checkbox", "required":false,"showInForm":true,"showInDetails":true,"category":"Connectivity"},
+							   "connectivity_infrared":{"name":"Connectivity Infrared", "type":"checkbox", "required":false,"showInForm":true,"showInDetails":true,"category":"Connectivity"},
+							   "connectivity_wifi":{"name":"Connectiviby Wifi", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Connectivity"},
+							   
+							   "android_os":{"name":"Android OS", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Android"},
+							   "android_ui":{"name":"Android UI", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Android"},
+							   
+							   "sizeandweight_dimensions":{"name":"Dimension", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Size and Weight"},
+							   "sizeandweight_weight":{"name":"Weight", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Size and Weight"},
+							   
+							   "display_screenresolution":{"name":"Display Screen Resolution", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Display"},
+							   "display_screensize":{"name":"Display Screen Size", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Display"},
+							   "display_touchscreen":{"name":"Display Touch Screen", "type":"checkbox", "required":false,"showInForm":true,"showInDetails":true,"category":"Display"},
+							   
+							   "hardware_accelerometer":{"name":"Hardware Accelerometer", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   "hardware_audiojack":{"name":"Hardware Audio Jack", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   "hardware_cpu":{"name":"Hardware CPU", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   "hardware_fmradio":{"name":"Hardware FM Radio", "type":"checkbox", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   "hardware_physicalkeyboard":{"name":"Hardware Physical Keyboard", "type":"checkbox", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   "hardware_usb":{"name":"Hardware USB", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Hardware"},
+							   
+							   "camera_features":{"name":"Camera Feactures", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Camera"},
+							   "camera_features_primary":{"name":"Camera Feactures Primary", "type":"text", "required":false,"showInForm":true,"showInDetails":true,"category":"Camera"},
+							   
+							   "additionalfeatures":{"name":"Adicional Feactures", "type":"textarea", "required":false,"showInForm":true,"showInDetails":true,"category":"Additional Features"}
+							   
+							
+							}
+				
+			}
+			
+		})
+		.filter('orderProperties',function(){
+				return function(obj){
+					return _.sortKeysBy(obj);
+				}
 		});
-	</script>
-
-    <body ng-app="phonecatApp" ng-controller="controller1">	
 		
-		<pre>Nombre:{{nombre}}</pre>	
+		//-------------------------------------------------------//
+		// Define the `phoneDetail` module
+		//-------------------------------------------------------//
+		angular.module('phoneDetail', ['core.factories.phone'])
+		.component('phoneDetail', {
+			templateUrl: 'phone-detail.template.html',
+			controller:  function PhoneDetailController(Phone, $routeParams,$http) {
+				var self = this;
 
-	</body>
+				self.setImage = function setImage(imageUrl) {
+				  self.mainImageUrl = imageUrl;
+				};
+				
+				self.phone = Phone.get({'id': $routeParams.phoneId}, function(phone) {
+					self.setImage(phone.images[0].img);
+				}); 
+			  }
+			
+		});
+		  
+		//-------------------------------------------------------//
+		// Define the `core.phone` module
+		//-------------------------------------------------------//
+		angular.module('core.factories.phone', ['ngResource'])
+		.factory('Phone', function($resource) {
+			  return $resource('api/phones/:id', {}, {
+				getAll: {
+				  method: 'GET',
+				  params: {},
+				  isArray: true
+				},
+				get: {
+				  method: 'GET',
+				  params: {},
+				  isArray: false
+				},
+				update: {
+					method:'PUT', 
+					params:{}, 
+					isArray:false
+				}
+			  }
+		 
+			  );
+			}
+		);
+		
+
+		//---------------------------------------------------------//
+		// Define the `checkmark` module
+		//---------------------------------------------------------//
+		angular.module('core.filters.checkmark', [])
+		.filter('checkmark', function() {
+			return function(input) {
+			  return input ? '\u2713' : '\u2718';
+			};
+		});
+		
+		//---------------------------------------------------------//
+		// Define the `animations` module
+		//---------------------------------------------------------//
+		angular.module('animations',[])
+		.animation('.phone', function phoneAnimationFactory() {
+			return {
+			  addClass: animateIn,
+			  removeClass: animateOut
+			};
+
+			function animateIn(element, className, done) {
+			  if (className !== 'selected') return;
+
+			  element.css({
+				display: 'block',
+				position: 'absolute',
+				top: 500,
+				left: 0
+			  }).animate({
+				top: 0
+			  }, done);
+
+			  return function animateInEnd(wasCanceled) {
+				if (wasCanceled) element.stop();
+			  };
+			}
+
+			function animateOut(element, className, done) {
+			  if (className !== 'selected') return;
+
+			  element.css({
+				position: 'absolute',
+				top: 0,
+				left: 0
+			  }).animate({
+				top: -500
+			  }, done);
+
+			  return function animateOutEnd(wasCanceled) {
+				if (wasCanceled) element.stop();
+			  };
+			}
+		  });
+		
+
+</script>
+	
+	
+	
+  </head>
+  <body>
+	<nav class="navbar navbar-inverse">
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="">PhoneCat</a></li>
+				<li class="active"><a href="#!/phones">Phones</a></li>
+			</ul>
+		</div>
+			
+	</nav>
+
+    <!-- to render partials -->
+    <div class="view-container">
+      <div ng-view class="view-frame"></div>
+    </div>
+	
+	
+	<!---------------------------------------------->
+	<!-- templates                                -->
+	<!---------------------------------------------->
+	
+	<script type="text/ng-template" id="messages.html">
+		<p ng-message="required">Este campo es obligatorio</p>
+		<p ng-message="minlength">El campo es demasiado corto</p>
+		<p ng-message="maxlength">El campo es demasiado largo</p>
+		<p ng-message="email">Introduzca un email válido</p>
+		<p ng-message="pattern"> Introduzca una contraseña válida:
+			<br>	<span>Longitud de 8 a 15 </span>
+			<br>	<span>Al menos una letra mayúscula</span>
+			<br>	<span>Al menos una letra minúscula</span>
+			<br>	<span>Al menos un número</span>
+		</p>
+	</script>
+	
+	<!-- template phone-list -->
+	<script type="text/ng-template" id="phone-list.template.html">
+		<div class="container-fluid">
+		  <div class="row">
+			<div class="col-md-2">
+			  <!--Sidebar content-->
+
+			  <p>
+				Search:
+				<input ng-model="$ctrl.query" />
+			  </p>
+
+			  <p>
+				Sort by:
+				<select ng-model="$ctrl.orderProp">
+				  <option value="name">Alphabetical</option>
+				  <option value="age">Newest</option>
+				</select>
+			  </p>
+
+			</div>
+			<div class="col-md-10">
+			  <!--Body content-->
+
+			  <ul class="phones">
+				<li ng-repeat="phone in $ctrl.phones | filter:$ctrl.query | orderBy:$ctrl.orderProp" class="thumbnail phone-list-item">
+				  <a href="#!/phones/{{phone.id}}" class="thumb">
+					<img ng-src="assets/{{phone.images}}" alt="{{phone.name}}" />
+				  </a>
+				  <a href="#!/phones/{{phone.id}}">{{phone.name}}</a>
+				  <p>{{phone.id}}-{{phone.description | limitTo:150}} ...</p>
+				</li>
+			  </ul>
+
+			</div>
+		  </div>
+		</div>
+
+	</script>
+	
+	<!-- template phone form -->
+	<script type="text/ng-template" id="phone-form.template.html">
+	  <div class="container-fluid">
+		 <form name="formPhone" ng-submit="$ctrl.update()">
+			<button type="submit" class="btn btn-primary" ng-disabled="formPhone.$invalid">Guardar</button>
+			<div ng-repeat="(key,value) in $ctrl.phone ">
+                <ng-form name="formChild">
+					<div class="form-group" ng-if="$ctrl.metaFields[key].showInForm">
+						<label for="item">{{$ctrl.metaFields[key].name}}</label>
+						
+						<input ng-if="$ctrl.metaFields[key].type!='textarea'" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" >
+						
+						<textarea ng-if="$ctrl.metaFields[key].type=='textarea'" cols="150" rows="3" type="{{$ctrl.metaFields[key].type}}" name="item" ng-model="$ctrl.phone[key]" class="form-control" ng-required="$ctrl.metaFields[key].required" ></textarea>
+						
+						<div class="help-block" style="color:red" ng-messages="formChild.item.$error">
+							<div ng-messages-include="messages.html"></div>
+						</div>
+						
+					</div>
+				</ng-form>
+			</div>
+			<button type="submit" class="btn btn-primary" ng-disabled="formPhone.$invalid">Guardar</button>
+		</form>
+	  </div>
+	</script>
+	
+	<!-- template phone-details -->
+	<script type="text/ng-template" id="phone-detail.template.html">
+		<div class="phone-images">
+			<img ng-src="assets/{{image.img}}" class="phone" ng-class="{selected: image.img === $ctrl.mainImageUrl}" ng-repeat="image in $ctrl.phone.images" />
+		</div>
+
+		<h1>{{$ctrl.phone.name}}</h1>
+
+		<p>{{$ctrl.phone.description}}</p>
+
+		<ul class="phone-thumbs">
+		  <li ng-repeat="image in $ctrl.phone.images">
+			<img ng-src="assets/{{image.img}}" ng-click="$ctrl.setImage(image.img)" />
+		  </li>
+		</ul>
+
+		<ul class="specs">
+		  <li>
+			<span>Availability and Networks</span>
+			<dl>
+			  <dt>Availability</dt>
+			  <dd>{{$ctrl.phone.availability}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Battery</span>
+			<dl>
+			  <dt>Type</dt>
+			  <dd>{{$ctrl.phone.battery_type}}</dd>
+			  <dt>Talk Time</dt>
+			  <dd>{{$ctrl.phone.battery_talkTime}}</dd>
+			  <dt>Standby time (max)</dt>
+			  <dd>{{$ctrl.phone.battery_standbyTime}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Storage and Memory</span>
+			<dl>
+			  <dt>RAM</dt>
+			  <dd>{{$ctrl.phone.storage_ram}}</dd>
+			  <dt>Internal Storage</dt>
+			  <dd>{{$ctrl.phone.storage_flash}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Connectivity</span>
+			<dl>
+			  <dt>Network Support</dt>
+			  <dd>{{$ctrl.phone.connectivity_cell}}</dd>
+			  <dt>WiFi</dt>
+			  <dd>{{$ctrl.phone.connectivity_wifi}}</dd>
+			  <dt>Bluetooth</dt>
+			  <dd>{{$ctrl.phone.connectivity_bluetooth}}</dd>
+			  <dt>Infrared</dt>
+			  <dd>{{$ctrl.phone.connectivity_infrared | checkmark}}</dd>
+			  <dt>GPS</dt>
+			  <dd>{{$ctrl.phone.connectivity_gps | checkmark}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Android</span>
+			<dl>
+			  <dt>OS Version</dt>
+			  <dd>{{$ctrl.phone.android_os}}</dd>
+			  <dt>UI</dt>
+			  <dd>{{$ctrl.phone.android_ui}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Size and Weight</span>
+			<dl>
+			  <dt>Dimensions</dt>
+			  <dd >{{$ctrl.phone.sizeAndWeight_dimensions}}</dd>
+			  <dt>Weight</dt>
+			  <dd>{{$ctrl.phone.sizeAndWeight_weight}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Display</span>
+			<dl>
+			  <dt>Screen size</dt>
+			  <dd>{{$ctrl.phone.display_screenSize}}</dd>
+			  <dt>Screen resolution</dt>
+			  <dd>{{$ctrl.phone.display_screenResolution}}</dd>
+			  <dt>Touch screen</dt>
+			  <dd>{{$ctrl.phone.display_touchScreen | checkmark}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Hardware</span>
+			<dl>
+			  <dt>CPU</dt>
+			  <dd>{{$ctrl.phone.hardware_cpu}}</dd>
+			  <dt>USB</dt>
+			  <dd>{{$ctrl.phone.hardware_usb}}</dd>
+			  <dt>Audio / headphone jack</dt>
+			  <dd>{{$ctrl.phone.hardware_audioJack}}</dd>
+			  <dt>FM Radio</dt>
+			  <dd>{{$ctrl.phone.hardware_fmRadio | checkmark}}</dd>
+			  <dt>Accelerometer</dt>
+			  <dd>{{$ctrl.phone.hardware_accelerometer | checkmark}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Camera</span>
+			<dl>
+			  <dt>Primary</dt>
+			  <dd>{{$ctrl.phone.camera_primary}}</dd>
+			  <dt>Features</dt>
+			  <dd>{{$ctrl.phone.camera_features}}</dd>
+			</dl>
+		  </li>
+		  <li>
+			<span>Additional Features</span>
+			<dd>{{$ctrl.phone.additionalFeatures}}</dd>
+		  </li>
+		</ul>
+
+	</script>
+	
+	
+	
+	
+
+  </body>
 </html>
